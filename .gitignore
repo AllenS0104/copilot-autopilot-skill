@@ -1,0 +1,8 @@
+# Runtime / local state (never committed)
+.copilot-autopilot/
+*.log
+
+# OS cruft
+Thumbs.db
+Desktop.ini
+.DS_Store
