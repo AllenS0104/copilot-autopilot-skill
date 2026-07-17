@@ -159,6 +159,31 @@ toggle** that has no publicly documented `settings.json` key, so the tool does
 in-app steps (e.g. Antigravity: *Settings → Agent → "Terminal Command Auto
 Execution" → Turbo*, then review the Allow/Deny lists).
 
+### Step-by-step: VS Code (agent guidance)
+
+1. Prerequisite: **GitHub Copilot** + **GitHub Copilot Chat** extensions
+   installed and signed in.
+2. Reload the shell so the helpers exist: `. $PROFILE` (PowerShell) or
+   `source ~/.bashrc` (bash/zsh).
+3. Apply: `Set-EditorAutopilot -Editor Code` (add `-Aggressive` / `--aggressive`
+   only in trusted environments to blanket-approve all tools + terminal).
+4. In VS Code run **Developer: Reload Window**. New Agent-mode sessions now start
+   at the **Autopilot** permission level.
+5. Verify with `Get-EditorAutopilot Code`; revert with `Reset-EditorAutopilot Code`.
+   Manual alternative: pick **Autopilot** from the Chat permissions dropdown, or
+   add the keys via **Preferences: Open User Settings (JSON)**.
+
+### Step-by-step: Antigravity (agent guidance)
+
+1. Run `Set-EditorAutopilot -Editor Antigravity` — this ensures
+   `%APPDATA%\Antigravity\User\settings.json` (or the platform equivalent) exists
+   and prints the in-app steps.
+2. In Antigravity open **Settings → Agent → "Terminal Command Auto Execution"**
+   and set it to **Turbo**; review the **Allow/Deny** lists (or use the
+   Antigravity CLI `/permissions`).
+3. Cursor and Windsurf follow the same pattern (Auto-Run/YOLO and Cascade Turbo).
+   Do not fabricate `settings.json` keys for these forks.
+
 ### Windows (PowerShell)
 
 ```powershell
