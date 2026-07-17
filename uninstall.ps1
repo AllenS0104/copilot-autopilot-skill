@@ -8,9 +8,10 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
-$beginMarker = '# >>> copilot-autopilot-default >>>'
-$endMarker   = '# <<< copilot-autopilot-default <<<'
-$pattern = [regex]::Escape($beginMarker) + '.*?' + [regex]::Escape($endMarker)
+$patterns = @(
+    ([regex]::Escape('# >>> copilot-autopilot-default >>>') + '.*?' + [regex]::Escape('# <<< copilot-autopilot-default <<<')),
+    ([regex]::Escape('# >>> copilot-autopilot-editors >>>') + '.*?' + [regex]::Escape('# <<< copilot-autopilot-editors <<<'))
+)
 
 $docs = [Environment]::GetFolderPath('MyDocuments')
 $targets = @(
@@ -21,10 +22,16 @@ $targets = @(
 foreach ($profilePath in $targets) {
     if (-not (Test-Path $profilePath)) { continue }
     $existing = Get-Content -LiteralPath $profilePath -Raw
-    if ([regex]::IsMatch($existing, $pattern, 'Singleline')) {
-        $updated = [regex]::Replace($existing, $pattern, '', 'Singleline').Trim()
-        Set-Content -LiteralPath $profilePath -Value ($updated + "`r`n") -Encoding UTF8
-        Write-Host "Removed block from $profilePath" -ForegroundColor Yellow
+    $found = $false
+    foreach ($pattern in $patterns) {
+        if ([regex]::IsMatch($existing, $pattern, 'Singleline')) {
+            $existing = [regex]::Replace($existing, $pattern, '', 'Singleline')
+            $found = $true
+        }
+    }
+    if ($found) {
+        Set-Content -LiteralPath $profilePath -Value ($existing.Trim() + "`r`n") -Encoding UTF8
+        Write-Host "Removed autopilot blocks from $profilePath" -ForegroundColor Yellow
     }
     else {
         Write-Host "No block found in $profilePath" -ForegroundColor DarkGray
