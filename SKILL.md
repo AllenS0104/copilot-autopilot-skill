@@ -1,14 +1,21 @@
 ---
 name: autopilot
-description: Set up and use the GitHub Copilot CLI "autopilot" PowerShell wrapper on Windows. Makes `copilot` auto-approve shell/tool commands by default, adds a --no-auto escape valve, timestamped execution logging, and a self-service "tool forge" (New-AutopilotTool) so autopilot can invent a missing CLI tool on the fly. Use when the user wants unattended/autonomous Copilot CLI runs, mentions autopilot mode, "auto-approve", "tool forge", New-AutopilotTool, or wants to install/update this wrapper in their PowerShell profile.
+description: Set up and use the GitHub Copilot CLI "autopilot" wrapper on Windows (PowerShell) and Ubuntu/Linux + macOS (bash/zsh). Makes `copilot` auto-approve shell/tool commands by default, adds a --no-auto escape valve, timestamped execution logging, and a self-service "tool forge" (New-AutopilotTool / new_autopilot_tool) so autopilot can invent a missing CLI tool on the fly. Use when the user wants unattended/autonomous Copilot CLI runs, mentions autopilot mode, "auto-approve", "tool forge", New-AutopilotTool, or wants to install/update this wrapper in their PowerShell profile or shell rc.
 license: MIT
 ---
 
-# Copilot CLI Autopilot (PowerShell)
+# Copilot CLI Autopilot (PowerShell + bash/zsh)
 
-A drop-in PowerShell wrapper that makes the **GitHub Copilot CLI** run in
-autopilot mode by default and gives an autonomous run three extra powers:
-an escape valve, an execution log, and an on-the-fly **tool forge**.
+A drop-in wrapper that makes the **GitHub Copilot CLI** run in autopilot mode by
+default and gives an autonomous run three extra powers: an escape valve, an
+execution log, and an on-the-fly **tool forge**.
+
+Two equivalent implementations ship in this skill:
+
+| Platform | Shell | Wrapper asset | Installer |
+| --- | --- | --- | --- |
+| Windows | PowerShell 7 + Windows PowerShell 5.1 | `assets/copilot-autopilot.ps1` | `install.ps1` |
+| Ubuntu/Linux, macOS | bash + zsh | `assets/copilot-autopilot.sh` | `install.sh` |
 
 ## When to use this skill
 
@@ -23,8 +30,13 @@ an escape valve, an execution log, and an on-the-fly **tool forge**.
 ## What it installs
 
 A single marker-delimited block (`# >>> copilot-autopilot-default >>>` …
-`# <<< copilot-autopilot-default <<<`) is inserted into **both** PowerShell
-profiles (PowerShell 7 and Windows PowerShell 5.1). It defines:
+`# <<< copilot-autopilot-default <<<`) is inserted into the shell startup files
+for your platform.
+
+### Windows (PowerShell)
+
+The block goes into **both** PowerShell profiles (PowerShell 7 and Windows
+PowerShell 5.1). It defines:
 
 | Function | Purpose |
 | --- | --- |
@@ -34,12 +46,28 @@ profiles (PowerShell 7 and Windows PowerShell 5.1). It defines:
 | `Remove-AutopilotTool` | Delete a forged tool + manifest entry. |
 | `Write-CopilotAutopilotLog` | Append a timestamped line to the log. |
 
-Shared home: `~/.copilot-autopilot/`
-- `tools/`  — forged tools + `.cmd` launchers, added to `PATH`.
+### Ubuntu/Linux & macOS (bash/zsh)
+
+The block goes into **both** `~/.bashrc` and `~/.zshrc`. It defines:
+
+| Function | Purpose |
+| --- | --- |
+| `copilot` | Wraps the real `copilot` binary, injecting `--autopilot` by default. |
+| `new_autopilot_tool` | Forge a new tool (bash / python) onto PATH. |
+| `get_autopilot_tool` | List forged tools from the manifest. |
+| `remove_autopilot_tool` | Delete a forged tool + manifest entry. |
+
+> iOS itself cannot run a terminal/CLI; use the macOS wrapper for the
+> Apple platform.
+
+Shared home (all platforms): `~/.copilot-autopilot/`
+- `tools/`  — forged tools (plus `.cmd` launchers on Windows), added to `PATH`.
 - `tools/manifest.json` — registry of forged tools.
 - `autopilot.log` — timestamped record of every `copilot` invocation.
 
 ## Install
+
+### Windows (PowerShell)
 
 ```powershell
 # From a clone of this repo:
@@ -51,12 +79,34 @@ Shared home: `~/.copilot-autopilot/`
 `install.ps1` is **idempotent**: it replaces the existing marker block if
 present, otherwise appends it, for both profile paths.
 
+### Ubuntu/Linux & macOS (bash/zsh)
+
+```bash
+# From a clone of this repo:
+bash ./install.sh
+# then reload:
+source ~/.bashrc   # or: source ~/.zshrc
+```
+
+`install.sh` is likewise **idempotent** across `~/.bashrc` and `~/.zshrc`.
+
 ## Usage
+
+### Windows (PowerShell)
 
 ```powershell
 copilot "refactor the auth module and run the tests"   # autopilot (default)
 copilot --no-auto "risky migration, ask me first"      # escape valve (one-off)
 $env:COPILOT_NO_AUTOPILOT = 1                           # escape valve (session)
+copilot --model gpt-5.4 "..."                           # model + autopilot combined
+```
+
+### Ubuntu/Linux & macOS (bash/zsh)
+
+```bash
+copilot "refactor the auth module and run the tests"   # autopilot (default)
+copilot --no-auto "risky migration, ask me first"      # escape valve (one-off)
+export COPILOT_NO_AUTOPILOT=1                           # escape valve (session)
 copilot --model gpt-5.4 "..."                           # model + autopilot combined
 ```
 
@@ -68,6 +118,8 @@ already specified (`--plan`, `--mode`, `-p`, `-i`, `--yolo`, …).
 
 When autopilot hits a missing tool and no ready solution exists:
 
+**Windows (PowerShell):**
+
 ```powershell
 New-AutopilotTool epochconv -Language python -Description 'unix epoch -> ISO' -Body @'
 import sys, datetime
@@ -78,6 +130,21 @@ epochconv 1700000000          # callable by bare name in any shell
 
 Languages: `powershell` (default), `python`, `batch`. Each non-batch tool gets a
 `.cmd` launcher so a bare `toolname` resolves from any shell via PATH.
+
+**Ubuntu/Linux & macOS (bash/zsh):**
+
+```bash
+new_autopilot_tool epochconv --language python --description 'unix epoch -> ISO' --body '
+import sys, datetime
+print(datetime.datetime.utcfromtimestamp(int(sys.argv[1])).isoformat())
+'
+epochconv 1700000000          # callable by bare name (chmod +x, on PATH)
+# body may also be piped on stdin:
+printf "echo hi\n" | new_autopilot_tool greet --language bash
+```
+
+Languages: `bash` (default), `python`. Each tool is made executable and dropped
+into `~/.copilot-autopilot/tools` (already on PATH).
 
 **Guidance for the agent:** only forge a tool after (1) confirming it isn't
 already installed, (2) checking the platform package managers, and (3) a web
@@ -95,10 +162,17 @@ the forge/logging pattern ports easily.
 
 ## Uninstall
 
-Remove the marker block from both profiles (or run `./uninstall.ps1`), then
-optionally delete `~/.copilot-autopilot/`.
+- **Windows:** remove the marker block from both profiles (or run
+  `./uninstall.ps1`).
+- **Ubuntu/Linux & macOS:** remove the block from `~/.bashrc` and `~/.zshrc`
+  (or run `bash ./uninstall.sh`).
+
+Then optionally delete `~/.copilot-autopilot/`.
 
 ## Files
 
-- `assets/copilot-autopilot.ps1` — the canonical wrapper block (source of truth).
-- `install.ps1` / `uninstall.ps1` — idempotent (un)installers.
+- `assets/copilot-autopilot.ps1` — canonical PowerShell wrapper block (Windows).
+- `assets/copilot-autopilot.sh` — canonical bash/zsh wrapper block (Linux/macOS).
+- `install.ps1` / `uninstall.ps1` — idempotent Windows (un)installers.
+- `install.sh` / `uninstall.sh` — idempotent Linux/macOS (un)installers.
+- `.gitattributes` — forces LF on `.sh` files so they run on Linux/macOS.
