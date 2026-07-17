@@ -95,6 +95,69 @@ set_editor_autopilot Code --aggressive
 get_editor_autopilot
 ```
 
+## Agentic editors (VS Code, Antigravity, …)
+
+Editors are configured through their `User/settings.json`, so use the
+`*-EditorAutopilot` helpers (installed with the wrapper) instead of a command
+wrapper. Existing settings are merged (a `.autopilot.bak` backup is written),
+re-running is idempotent, and `Reset-EditorAutopilot` cleanly reverts.
+
+### VS Code / VS Code Insiders / VSCodium — fully automated
+
+Prerequisite: the **GitHub Copilot** + **GitHub Copilot Chat** extensions
+installed and signed in.
+
+```powershell
+# Windows (PowerShell)
+. $PROFILE                          # reload so the functions are available
+Set-EditorAutopilot -Editor Code    # write verified autopilot keys
+# optional, trusted environments only — blanket-approve ALL tools + terminal:
+Set-EditorAutopilot -Editor Code -Aggressive
+Get-EditorAutopilot Code            # inspect
+Reset-EditorAutopilot Code          # revert
+```
+
+```bash
+# Ubuntu/Linux & macOS (bash/zsh)
+source ~/.bashrc                    # or: source ~/.zshrc
+set_editor_autopilot Code           # write verified autopilot keys
+set_editor_autopilot Code --aggressive   # trusted environments only
+get_editor_autopilot Code
+reset_editor_autopilot Code
+```
+
+This writes to `settings.json`:
+
+```jsonc
+{
+  "chat.agent.enabled": true,
+  "chat.permissions.default": "autopilot"   // new sessions auto-approve + keep going
+}
+```
+
+Then run **Developer: Reload Window** in VS Code. You can also skip the tool and
+pick **Autopilot** from the permissions dropdown in the Chat view (per session),
+or add the keys above by hand via **Preferences: Open User Settings (JSON)**.
+
+### Antigravity (Google) — settings ensured + in-app Turbo
+
+Antigravity's full autonomy lives behind an in-app toggle with no documented
+`settings.json` key, so the tool ensures the settings file exists and prints the
+exact steps rather than inventing keys.
+
+```powershell
+Set-EditorAutopilot -Editor Antigravity   # ensures settings.json + prints steps
+```
+
+Then in Antigravity: **Settings → Agent → "Terminal Command Auto Execution" →
+Turbo**, and review the **Allow/Deny** lists (or set it via the Antigravity CLI
+`/permissions`). Cursor and Windsurf work the same way (Auto-Run/YOLO and
+Cascade Turbo respectively) — run `Set-EditorAutopilot` with no `-Editor` to
+handle every installed editor at once.
+
+> **Caution:** auto-approving every command reduces protection against prompt
+> injection. Use these settings only in trusted environments.
+
 ## Uninstall
 
 ```powershell
